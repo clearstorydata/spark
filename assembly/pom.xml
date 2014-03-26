@@ -70,28 +70,8 @@
     </dependency>
     <dependency>
       <groupId>org.apache.spark</groupId>
-      <artifactId>spark-bagel_2.9.3</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-mllib_2.9.3</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.spark</groupId>
       <artifactId>spark-repl_2.9.3</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-streaming_2.9.3</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>net.sf.py4j</groupId>
-      <artifactId>py4j</artifactId>
-      <version>0.7</version>
     </dependency>
   </dependencies>
 
@@ -275,17 +255,6 @@
                       </mapper>
                     </data>
                     <data>
-                      <src>${basedir}/../pyspark</src>
-                      <type>file</type>
-                      <mapper>
-                        <type>perm</type>
-                        <user>${deb.user}</user>
-                        <group>${deb.user}</group>
-                        <prefix>${deb.install.path}</prefix>
-                        <filemode>744</filemode>
-                      </mapper>
-                    </data>
-                    <data>
                       <src>${basedir}/src/deb/RELEASE</src>
                       <type>file</type>
                       <mapper>
@@ -314,17 +283,6 @@
                         <user>${deb.user}</user>
                         <group>${deb.user}</group>
                         <prefix>${deb.install.path}/bin</prefix>
-                        <filemode>744</filemode>
-                      </mapper>
-                    </data>
-                    <data>
-                      <src>${basedir}/../python</src>
-                      <type>directory</type>
-                      <mapper>
-                        <type>perm</type>
-                        <user>${deb.user}</user>
-                        <group>${deb.user}</group>
-                        <prefix>${deb.install.path}/python</prefix>
                         <filemode>744</filemode>
                       </mapper>
                     </data>
