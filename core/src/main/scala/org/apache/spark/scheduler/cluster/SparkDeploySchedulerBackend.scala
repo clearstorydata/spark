@@ -79,6 +79,8 @@ private[spark] class SparkDeploySchedulerBackend(
     if (!stopping) {
       logError("Spark cluster looks dead, giving up.")
       scheduler.error("Spark cluster looks down")
+      // Ensure the application terminates, as we can no longer run jobs.
+      sc.stop()
     }
   }
 
