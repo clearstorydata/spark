@@ -92,7 +92,7 @@ of the most common options to set are:
   <td>(none)</td>
   <td>
     The cluster manager to connect to. See the list of
-    <a href="scala-programming-guide.html#master-urls"> allowed master URL's</a>.
+    <a href="submitting-applications.html#master-urls"> allowed master URL's</a>.
   </td>
 </tr>
 <tr>
@@ -486,6 +486,17 @@ Apart from these, the following properties are also available, and may be useful
   <td>
     Default number of tasks to use across the cluster for distributed shuffle operations
     (<code>groupByKey</code>, <code>reduceByKey</code>, etc) when not set by user.
+  </td>
+</tr>
+<tr>
+  <td><code>spark.default.partitioner</code></td>
+  <td>hash</td>
+  <td>
+    Implementation to use for partitioning key-value data pairs. There are two implementations
+    available:<code>hash</code> and <code>byteswap</code>.  Both are based on the <code>hashCode</code> of
+    the keys <code>mod</code> the number of partitions, but the <code>byteswap</code> partitioner also
+    applies <code>byteswap32</code> to the hash codes, which helps guarantee that all partitions are used
+    even when the hash codes are divisible by a factor of the number of partitions.
   </td>
 </tr>
 <tr>
