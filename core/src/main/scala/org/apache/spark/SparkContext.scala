@@ -1119,6 +1119,29 @@ class SparkContext(config: SparkConf) extends Logging {
     rdd.doCheckpoint()
   }
 
+  def submitSaveAsHadoopFileJob[T, U: ClassTag](
+      rdd: RDD[T],
+      func: (TaskContext, Iterator[T]) => U,
+      partitions: Seq[Int],
+      allowLocal: Boolean,
+      resultHandler: (Int, U) => Unit,
+      postCompleteFunc: () => Unit): FutureAction[Unit] = {
+    if (dagScheduler == null) {
+      throw new SparkException("SparkContext has been shutdown")
+    }
+    val callSite = getCallSite
+    val cleanedFunc = clean(func)
+    val waiter = dagScheduler.submitJob(
+      rdd,
+      cleanedFunc,
+      partitions,
+      callSite,
+      allowLocal,
+      resultHandler,
+      localProperties.get)
+    new SimpleFutureWithPostCompleteAction(waiter, Unit, postCompleteFunc)
+  }
+
   /**
    * Run a function on a given set of partitions in an RDD and return the results as an array. The
    * allowLocal flag specifies whether the scheduler can run the computation on the driver rather
