@@ -24,6 +24,7 @@ import scala.util.Try
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{JobFailed, JobSucceeded, JobWaiter}
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * :: Experimental ::
@@ -151,6 +152,83 @@ class SimpleFutureAction[T] private[spark](jobWaiter: JobWaiter[_], resultFunc: 
   }
 }
 
+/**
+ * :: Experimental ::
+ * A [[FutureAction]] holding the result of an action that triggers a single job. Also a post
+ * complete function passed in for resource collection and/or job accounting, etc.
+ */
+@Experimental
+class SimpleFutureWithPostCompleteAction[T] private[spark](
+      jobWaiter: JobWaiter[_], resultFunc: => T, postCompleteFunc: () => Unit)
+  extends FutureAction[T] {
+
+  override def cancel() {
+    jobWaiter.cancel()
+  }
+
+  override def ready(atMost: Duration)(
+      implicit permit: CanAwait): SimpleFutureWithPostCompleteAction.this.type = {
+    if (!atMost.isFinite()) {
+      awaitResult()
+    } else jobWaiter.synchronized {
+      val finishTime = System.currentTimeMillis() + atMost.toMillis
+      while (!isCompleted) {
+        val time = System.currentTimeMillis()
+        if (time >= finishTime) {
+          executePostCompleteFunc()
+          throw new TimeoutException
+        } else {
+          jobWaiter.wait(finishTime - time)
+        }
+      }
+    }
+    this
+  }
+
+  @throws(classOf[Exception])
+  override def result(atMost: Duration)(implicit permit: CanAwait): T = {
+    ready(atMost)(permit)
+    awaitResult() match {
+      case scala.util.Success(res) => res
+      case scala.util.Failure(e) => throw e
+    }
+  }
+
+  override def onComplete[U](func: (Try[T]) => U)(implicit executor: ExecutionContext) {
+    executor.execute(new Runnable {
+      override def run() {
+        func(awaitResult())
+      }
+    })
+  }
+
+  override def isCompleted: Boolean = jobWaiter.jobFinished
+
+  override def value: Option[Try[T]] = {
+    if (jobWaiter.jobFinished) {
+      Some(awaitResult())
+    } else {
+      None
+    }
+  }
+
+  private def awaitResult(): Try[T] = {
+    jobWaiter.awaitResult() match {
+      case JobSucceeded =>
+        executePostCompleteFunc()
+        scala.util.Success(resultFunc)
+      case JobFailed(e: Exception) =>
+        executePostCompleteFunc()
+        scala.util.Failure(e)
+    }
+  }
+
+  private[this] def executePostCompleteFunc() {
+    if (!postCompleteExecuted.getAndSet(true)) postCompleteFunc()
+  }
+
+  private[this] val postCompleteExecuted: AtomicBoolean = new AtomicBoolean(false)
+}
 
 /**
  * :: Experimental ::
