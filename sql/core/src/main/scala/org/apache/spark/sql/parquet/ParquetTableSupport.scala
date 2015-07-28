@@ -36,7 +36,7 @@ import org.apache.spark.sql.types._
  *
  *@param root The root group converter for the record.
  */
-private[parquet] class RowRecordMaterializer(root: CatalystConverter)
+class RowRecordMaterializer(root: CatalystConverter)
   extends RecordMaterializer[Row] {
 
   def this(parquetSchema: MessageType, attributes: Seq[Attribute]) =
@@ -50,7 +50,7 @@ private[parquet] class RowRecordMaterializer(root: CatalystConverter)
 /**
  * A `parquet.hadoop.api.ReadSupport` for Row objects.
  */
-private[parquet] class RowReadSupport extends ReadSupport[Row] with Logging {
+class RowReadSupport extends ReadSupport[Row] with Logging {
 
   override def prepareForRead(
       conf: Configuration,
@@ -118,7 +118,7 @@ private[parquet] class RowReadSupport extends ReadSupport[Row] with Logging {
   }
 }
 
-private[parquet] object RowReadSupport {
+object RowReadSupport {
   val SPARK_ROW_REQUESTED_SCHEMA = "org.apache.spark.sql.parquet.row.requested_schema"
   val SPARK_METADATA_KEY = "org.apache.spark.sql.parquet.row.metadata"
 
@@ -131,7 +131,7 @@ private[parquet] object RowReadSupport {
 /**
  * A `parquet.hadoop.api.WriteSupport` for Row ojects.
  */
-private[parquet] class RowWriteSupport extends WriteSupport[Row] with Logging {
+class RowWriteSupport extends WriteSupport[Row] with Logging {
 
   private[parquet] var writer: RecordConsumer = null
   private[parquet] var attributes: Array[Attribute] = null
@@ -318,7 +318,7 @@ private[parquet] class RowWriteSupport extends WriteSupport[Row] with Logging {
 }
 
 // Optimized for non-nested rows
-private[parquet] class MutableRowWriteSupport extends RowWriteSupport {
+class MutableRowWriteSupport extends RowWriteSupport {
   override def write(record: Row): Unit = {
     val attributesSize = attributes.size
     if (attributesSize > record.size) {
@@ -368,7 +368,7 @@ private[parquet] class MutableRowWriteSupport extends RowWriteSupport {
   }
 }
 
-private[parquet] object RowWriteSupport {
+object RowWriteSupport {
   val SPARK_ROW_SCHEMA: String = "org.apache.spark.sql.parquet.row.attributes"
 
   def getSchema(configuration: Configuration): Seq[Attribute] = {
