@@ -854,6 +854,13 @@ class SQLContext(@transient val sparkContext: SparkContext)
         Project(projectList, filterCondition.map(Filter(_, scan)).getOrElse(scan))
       }
     }
+
+    override protected def attachLogicalPlan(
+        physicalPlans: Seq[SparkPlan],
+        logicalPlan: LogicalPlan): Seq[SparkPlan] = {
+      physicalPlans.map(_.withLogicalPlan(logicalPlan))
+    }
+
   }
 
   @transient
