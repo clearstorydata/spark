@@ -1719,16 +1719,6 @@ class SQLQuerySuite extends QueryTest with SharedSQLContext {
     }
   }
 
-  test("SPARK-10389: order by non-attribute grouping expression on Aggregate") {
-    withTempTable("src") {
-      Seq((1, 1), (-1, 1)).toDF("key", "value").registerTempTable("src")
-      checkAnswer(sql("SELECT MAX(value) FROM src GROUP BY key + 1 ORDER BY key + 1"),
-        Seq(Row(1), Row(1)))
-      checkAnswer(sql("SELECT MAX(value) FROM src GROUP BY key + 1 ORDER BY (key + 1) * 2"),
-        Seq(Row(1), Row(1)))
-    }
-  }
-
   test("SortMergeJoin returns wrong results when using UnsafeRows") {
     // This test is for the fix of https://issues.apache.org/jira/browse/SPARK-10737.
     // This bug will be triggered when Tungsten is enabled and there are multiple
