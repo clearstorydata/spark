@@ -793,6 +793,7 @@ private[hive] case class MetastoreRelation
 
   @transient override lazy val statistics: Statistics = Statistics(
     sizeInBytes = {
+      val hiveContext = sqlContext.asInstanceOf[HiveContext]
       val totalSize = hiveQlTable.getParameters.get(StatsSetupConst.TOTAL_SIZE)
       val rawDataSize = hiveQlTable.getParameters.get(StatsSetupConst.RAW_DATA_SIZE)
       // TODO: check if this estimate is valid for tables after partition pruning.
@@ -801,13 +802,20 @@ private[hive] case class MetastoreRelation
       // alternative would be going through Hadoop's FileSystem API, which can be expensive if a lot
       // of RPCs are involved.  Besides `totalSize`, there are also `numFiles`, `numRows`,
       // `rawDataSize` keys (see StatsSetupConst in Hive) that we can look at in the future.
-      BigInt(
-        // When table is external,`totalSize` is always zero, which will influence join strategy
-        // so when `totalSize` is zero, use `rawDataSize` instead
-        // if the size is still less than zero, we use default size
-        Option(totalSize).map(_.toLong).filter(_ > 0)
-          .getOrElse(Option(rawDataSize).map(_.toLong).filter(_ > 0)
-          .getOrElse(sqlContext.conf.defaultSizeInBytes)))
+
+      // When table is external,`totalSize` is always zero, which will influence join strategy
+      // so when `totalSize` is zero, use `rawDataSize` instead
+      // if the size is still less than zero, we use default size
+      val sizeEst = Option(totalSize).map(_.toLong).filter(_ > 0)
+        .getOrElse(Option(rawDataSize).map(_.toLong).filter(_ > 0)
+        .getOrElse(hiveContext.hadoopFileSelector.flatMap(
+          _.getFilesSizeInBytes(
+            hiveQlTable.getTableName,
+            hiveQlTable.getPath.getFileSystem(hiveContext.hiveconf),
+            hiveQlTable.getPath)).filter(_ > 0)
+        .getOrElse(sqlContext.conf.defaultSizeInBytes)))
+      logDebug(s"Size estimation for table ${hiveQlTable.getTableName}: $sizeEst bytes")
+      BigInt(sizeEst)
     }
   )
 
