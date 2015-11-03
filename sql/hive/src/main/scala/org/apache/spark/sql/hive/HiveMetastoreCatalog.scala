@@ -409,12 +409,12 @@ private[hive] class HiveMetastoreCatalog(val client: ClientInterface, hive: Hive
     val databaseName = tableIdent.lift(tableIdent.size - 2).getOrElse(
       client.currentDatabase)
     val rawTableName = tableIdent.last
-    val tblName = tableNamePreprocessor(rawTableName)
-    val table = client.getTable(databaseName, tblName).withTableName(rawTableName)
+    val tblNameInMetastore = tableNamePreprocessor(rawTableName)
+    val table = client.getTable(databaseName, tblNameInMetastore).withTableName(rawTableName)
 
     if (table.properties.get("spark.sql.sources.provider").isDefined) {
       val dataSourceTable =
-        cachedDataSourceTables(QualifiedTableName(databaseName, tblName).toLowerCase)
+        cachedDataSourceTables(QualifiedTableName(databaseName, tblNameInMetastore).toLowerCase)
       // Then, if alias is specified, wrap the table with a Subquery using the alias.
       // Otherwise, wrap the table with a Subquery using the table name.
       val withAlias =
@@ -431,7 +431,7 @@ private[hive] class HiveMetastoreCatalog(val client: ClientInterface, hive: Hive
         case Some(aliasText) => Subquery(aliasText, HiveQl.createPlan(viewText))
       }
     } else {
-      MetastoreRelation(databaseName, tblName, alias)(table)(hive)
+      MetastoreRelation(databaseName, rawTableName, alias)(table)(hive)
     }
   }
 
