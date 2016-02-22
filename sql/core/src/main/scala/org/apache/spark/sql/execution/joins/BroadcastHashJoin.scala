@@ -66,7 +66,8 @@ case class BroadcastHashJoin(
   private[this] val broadcastFutureInitLock = new Object()
 
   // Use @volatile so we can read a snapshot of this value of this without locking.
-  private[this] @volatile var broadcastFutureValue: Option[Future[Broadcast[HashedRelation]]] = None
+  @volatile
+  private[this] var broadcastFutureValue: Option[Future[Broadcast[HashedRelation]]] = None
 
   // Use lazy so that we won't do broadcast when calling explain but still cache the broadcast value
   // for the same query.
