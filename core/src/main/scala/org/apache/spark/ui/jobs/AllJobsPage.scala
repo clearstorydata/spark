@@ -160,7 +160,7 @@ private[ui] class AllJobsPage(parent: JobsTab) extends WebUIPage("") {
     events.toSeq
   }
 
-  private def makeTimeline(
+  protected def makeTimeline(
       jobs: Seq[JobUIData],
       executors: HashMap[String, ExecutorUIData],
       startTime: Long): Seq[Node] = {
@@ -205,7 +205,7 @@ private[ui] class AllJobsPage(parent: JobsTab) extends WebUIPage("") {
     </script>
   }
 
-  private def jobsTable(jobs: Seq[JobUIData]): Seq[Node] = {
+  protected def jobsTable(jobs: Seq[JobUIData]): Seq[Node] = {
     val someJobHasJobGroup = jobs.exists(_.jobGroup.isDefined)
 
     val columns: Seq[Node] = {
