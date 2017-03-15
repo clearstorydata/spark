@@ -289,13 +289,27 @@ private[ui] class JobGroupPage(parent: JobsTab) extends WebUIPage("jobgroup") {
       val activeJobsInGroup = mutable.Buffer[JobUIData]()
       val completedJobsInGroup = mutable.Buffer[JobUIData]()
       val failedJobsInGroup = mutable.Buffer[JobUIData]()
+      var totalDuration = 0L
       groupToJobsTable.get.foreach { jobId =>
-        val job = jobsInGroup.get(jobId)
-        job.get.status match {
+        val job = jobsInGroup.get(jobId).get
+        val duration: Option[Long] = {
+          job.submissionTime.map { start =>
+            val end = job.completionTime.getOrElse(System.currentTimeMillis())
+            end - start
+          }
+        }
+        totalDuration += duration.getOrElse(0L)
+        job.status match {
           case JobExecutionStatus.RUNNING => activeJobsInGroup ++= job
           case JobExecutionStatus.SUCCEEDED => completedJobsInGroup ++= job
           case JobExecutionStatus.FAILED => failedJobsInGroup ++= job
         }
+      }
+
+      val formattedDuration = if (totalDuration == 0) {
+        "Unknown"
+      } else {
+        UIUtils.formatDuration(totalDuration)
       }
 
       val activeJobsTable =
@@ -312,6 +326,14 @@ private[ui] class JobGroupPage(parent: JobsTab) extends WebUIPage("jobgroup") {
       val summary: NodeSeq =
         <div>
           <ul class="unstyled">
+            <li>
+              <strong>Total Duration: </strong>
+              {formattedDuration}
+            </li>
+            <li>
+              <strong>Total jobs submitted: </strong>
+              {activeJobsInGroup.size + completedJobsInGroup.size + failedJobsInGroup.size}
+            </li>
             {if (shouldShowActiveJobs) {
             <li>
               <a href="#active">
@@ -328,7 +350,7 @@ private[ui] class JobGroupPage(parent: JobsTab) extends WebUIPage("jobgroup") {
             <li>
               <a href="#failed">
                 <strong>Failed Jobs:</strong>
-              </a>{listener.numFailedJobs}
+              </a>{failedJobsInGroup.size}
             </li>
           }}
           </ul>
