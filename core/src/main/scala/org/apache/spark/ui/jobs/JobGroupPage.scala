@@ -291,15 +291,15 @@ private[ui] class JobGroupPage(parent: JobsTab) extends WebUIPage("jobgroup") {
       val failedJobsInGroup = mutable.Buffer[JobUIData]()
       var totalDuration = 0L
       groupToJobsTable.get.foreach { jobId =>
-        val job = jobsInGroup.get(jobId).get
+        val job = jobsInGroup.get(jobId)
         val duration: Option[Long] = {
-          job.submissionTime.map { start =>
-            val end = job.completionTime.getOrElse(System.currentTimeMillis())
+          job.get.submissionTime.map { start =>
+            val end = job.get.completionTime.getOrElse(System.currentTimeMillis())
             end - start
           }
         }
         totalDuration += duration.getOrElse(0L)
-        job.status match {
+        job.get.status match {
           case JobExecutionStatus.RUNNING => activeJobsInGroup ++= job
           case JobExecutionStatus.SUCCEEDED => completedJobsInGroup ++= job
           case JobExecutionStatus.FAILED => failedJobsInGroup ++= job
