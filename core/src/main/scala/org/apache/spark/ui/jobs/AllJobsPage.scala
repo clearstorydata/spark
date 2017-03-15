@@ -205,7 +205,7 @@ private[ui] class AllJobsPage(parent: JobsTab) extends WebUIPage("") {
     </script>
   }
 
-  protected def jobsTable(jobs: Seq[JobUIData]): Seq[Node] = {
+  private def jobsTable(jobs: Seq[JobUIData]): Seq[Node] = {
     val someJobHasJobGroup = jobs.exists(_.jobGroup.isDefined)
 
     val columns: Seq[Node] = {
@@ -231,9 +231,13 @@ private[ui] class AllJobsPage(parent: JobsTab) extends WebUIPage("") {
       val jobDescription = UIUtils.makeDescription(lastStageDescription, basePathUri)
 
       val detailUrl = "%s/jobs/job?id=%s".format(basePathUri, job.jobId)
+      val groupUrl = "%s/jobs/jobgroup?id=%s".format(basePathUri, job.jobGroup.getOrElse(""))
       <tr id={"job-" + job.jobId}>
         <td sorttable_customkey={job.jobId.toString}>
-          {job.jobId} {job.jobGroup.map(id => s"($id)").getOrElse("")}
+          {job.jobId}
+          <a href={groupUrl} class="name-link">
+            {job.jobGroup.map(id => s"($id)").getOrElse("")}
+          </a>
         </td>
         <td>
           {jobDescription}
