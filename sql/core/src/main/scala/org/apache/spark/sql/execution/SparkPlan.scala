@@ -138,6 +138,13 @@ abstract class SparkPlan extends QueryPlan[SparkPlan] with Logging with Serializ
   def canProcessSafeRows: Boolean = true
 
   /**
+   * This is used to make sure [[execute()]] always returns the same RDD. This should only be
+   * called from [[execute()]].
+   */
+  @transient
+  private[this] lazy val executedRdd: RDD[InternalRow] = doExecute()
+
+  /**
    * Returns the result of this query as an RDD[InternalRow] by delegating to doExecute
    * after adding query plan information to created RDDs for visualization.
    * Concrete implementations of SparkPlan should override doExecute instead.
@@ -157,7 +164,7 @@ abstract class SparkPlan extends QueryPlan[SparkPlan] with Logging with Serializ
     }
     RDDOperationScope.withScope(sparkContext, nodeName, false, true) {
       prepare()
-      doExecute()
+      executedRdd
     }
   }
 
