@@ -160,7 +160,7 @@ private[ui] class AllJobsPage(parent: JobsTab) extends WebUIPage("") {
     events.toSeq
   }
 
-  protected def makeTimeline(
+  private def makeTimeline(
       jobs: Seq[JobUIData],
       executors: HashMap[String, ExecutorUIData],
       startTime: Long): Seq[Node] = {

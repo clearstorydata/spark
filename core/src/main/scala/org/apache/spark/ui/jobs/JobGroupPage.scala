@@ -160,12 +160,12 @@ private[ui] class JobGroupPage(parent: JobsTab) extends WebUIPage("jobgroup") {
            |     'Status: ${status}<br>' +
            |     'Submitted: ${UIUtils.formatDate(new Date(submissionTime))}' +
            |     '${
-          if (status != JobExecutionStatus.RUNNING) {
-            s"""<br>Completed: ${UIUtils.formatDate(new Date(completionTime))}"""
-          } else {
-            ""
-          }
-        }">' +
+                    if (status != JobExecutionStatus.RUNNING) {
+                      s"""<br>Completed: ${UIUtils.formatDate(new Date(completionTime))}"""
+                    } else {
+                      ""
+                    }
+                  }">' +
            |    '${jsEscapedDesc} (Job ${jobId})</div>'
            |}
          """.stripMargin
@@ -204,12 +204,12 @@ private[ui] class JobGroupPage(parent: JobsTab) extends WebUIPage("jobgroup") {
                |    'data-title="Executor ${executorId}<br>' +
                |    'Removed at ${UIUtils.formatDate(new Date(event.finishTime.get))}' +
                |    '${
-              if (event.finishReason.isDefined) {
-                s"""<br>Reason: ${event.finishReason.get.replace("\n", " ")}"""
-              } else {
-                ""
-              }
-            }"' +
+                        if (event.finishReason.isDefined) {
+                          s"""<br>Reason: ${event.finishReason.get.replace("\n", " ")}"""
+                        } else {
+                          ""
+                        }
+                      }"' +
                |    'data-html="true">Executor ${executorId} removed</div>'
                |}
              """.stripMargin
@@ -381,8 +381,8 @@ private[ui] class JobGroupPage(parent: JobsTab) extends WebUIPage("jobgroup") {
       }
 
       val helpText =
-        """A job is triggered by an action, like count() or saveAsTextFile().""" +
-          " Click on a job to see information about the stages of tasks inside it."
+        s"""A job is triggered by an action, like count() or saveAsTextFile().
+           | Click on a job to see information about the stages of tasks inside it.""".stripMargin
 
       UIUtils.headerSparkPage("Spark Jobs", content, parent, helpText = Some(helpText))
     }
