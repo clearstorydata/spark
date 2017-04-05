@@ -231,13 +231,13 @@ private[ui] class AllJobsPage(parent: JobsTab) extends WebUIPage("") {
       val jobDescription = UIUtils.makeDescription(lastStageDescription, basePathUri)
 
       val detailUrl = "%s/jobs/job?id=%s".format(basePathUri, job.jobId)
-      val groupUrl = "%s/jobs/jobgroup?id=%s".format(basePathUri, job.jobGroup.getOrElse(""))
       <tr id={"job-" + job.jobId}>
         <td sorttable_customkey={job.jobId.toString}>
-          {job.jobId}
-          <a href={groupUrl} class="name-link">
-            {job.jobGroup.map(id => s"($id)").getOrElse("")}
+          {job.jobId}{ job.jobGroup.map { id =>
+          <a href={"%s/jobs/jobgroup?id=%s".format(basePathUri, id)} class="name-link">
+            {id}
           </a>
+          }.getOrElse({job.jobGroup.map(id => s"($id)").getOrElse("")})}
         </td>
         <td>
           {jobDescription}

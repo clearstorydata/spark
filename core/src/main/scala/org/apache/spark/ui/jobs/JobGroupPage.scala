@@ -303,13 +303,8 @@ private[ui] class JobGroupPage(parent: JobsTab) extends WebUIPage("jobgroup") {
           case JobExecutionStatus.RUNNING => activeJobsInGroup ++= job
           case JobExecutionStatus.SUCCEEDED => completedJobsInGroup ++= job
           case JobExecutionStatus.FAILED => failedJobsInGroup ++= job
+          case JobExecutionStatus.UNKNOWN => // not handling unknown status
         }
-      }
-
-      val formattedDuration = if (totalDuration == 0) {
-        "Unknown"
-      } else {
-        UIUtils.formatDuration(totalDuration)
       }
 
       val activeJobsTable =
@@ -327,30 +322,33 @@ private[ui] class JobGroupPage(parent: JobsTab) extends WebUIPage("jobgroup") {
         <div>
           <ul class="unstyled">
             <li>
-              <strong>Total Duration: </strong>
-              {formattedDuration}
+              <strong>Total Duration:</strong>
+              {
+                if (totalDuration == 0) {
+                  "Unknown"
+                } else {
+                  UIUtils.formatDuration(totalDuration)
+                }
+              }
             </li>
             <li>
-              <strong>Total jobs submitted: </strong>
+              <strong>Total jobs submitted:</strong>
               {activeJobsInGroup.size + completedJobsInGroup.size + failedJobsInGroup.size}
             </li>
             {if (shouldShowActiveJobs) {
             <li>
-              <a href="#active">
-                <strong>Active Jobs:</strong>
-              </a>{activeJobsInGroup.size}
+              <a href="#active"><strong>Active Jobs:</strong></a>
+              {activeJobsInGroup.size}
             </li>
           }}{if (shouldShowCompletedJobs) {
             <li id="completed-summary">
-              <a href="#completed">
-                <strong>Completed Jobs:</strong>
-              </a>{completedJobsInGroup.size}
+              <a href="#completed"><strong>Completed Jobs:</strong></a>
+              {completedJobsInGroup.size}
             </li>
           }}{if (shouldShowFailedJobs) {
             <li>
-              <a href="#failed">
-                <strong>Failed Jobs:</strong>
-              </a>{failedJobsInGroup.size}
+              <a href="#failed"><strong>Failed Jobs:</strong></a>
+              {failedJobsInGroup.size}
             </li>
           }}
           </ul>
@@ -362,21 +360,15 @@ private[ui] class JobGroupPage(parent: JobsTab) extends WebUIPage("jobgroup") {
         executorListener.executorIdToData, listener.startTime)
 
       if (shouldShowActiveJobs) {
-        content ++= <h4 id="active">Active Jobs (
-          {activeJobsInGroup.size}
-          )</h4> ++
+        content ++= <h4 id="active">Active Jobs ({activeJobsInGroup.size})</h4> ++
           activeJobsTable
       }
       if (shouldShowCompletedJobs) {
-        content ++= <h4 id="completed">Completed Jobs (
-          {completedJobsInGroup.size}
-          )</h4> ++
+        content ++= <h4 id="completed">Completed Jobs ({completedJobsInGroup.size})</h4> ++
           completedJobsTable
       }
       if (shouldShowFailedJobs) {
-        content ++= <h4 id="failed">Failed Jobs (
-          {failedJobsInGroup.size}
-          )</h4> ++
+        content ++= <h4 id="failed">Failed Jobs ({failedJobsInGroup.size})</h4> ++
           failedJobsTable
       }
 
