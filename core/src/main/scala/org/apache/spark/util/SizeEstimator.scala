@@ -55,7 +55,7 @@ private[spark] trait KnownSizeEstimation {
  * http://www.javaworld.com/javaworld/javaqa/2003-12/02-qa-1226-sizeof.html
  */
 @DeveloperApi
-object SizeEstimator extends Logging {
+class SizeEstimator extends Logging {
 
   /**
    * Estimate the number of bytes that the given object takes up on the JVM heap. The estimate
@@ -196,7 +196,9 @@ object SizeEstimator extends Logging {
     val shellSize: Long,
     val pointerFields: List[Field]) {}
 
-  private def estimate(obj: AnyRef, visited: IdentityHashMap[AnyRef, AnyRef]): Long = {
+  private val emptyClassInfo = new ClassInfo(0, List())
+
+  def estimate(obj: AnyRef, visited: IdentityHashMap[AnyRef, AnyRef]): Long = {
     val state = new SearchState(visited)
     state.enqueue(obj)
     while (!state.isFinished) {
@@ -228,8 +230,8 @@ object SizeEstimator extends Logging {
   }
 
   // Estimate the size of arrays larger than ARRAY_SIZE_FOR_SAMPLING by sampling.
-  private val ARRAY_SIZE_FOR_SAMPLING = 400
-  private val ARRAY_SAMPLE_SIZE = 100 // should be lower than ARRAY_SIZE_FOR_SAMPLING
+  protected val ARRAY_SIZE_FOR_SAMPLING = 400
+  protected val ARRAY_SAMPLE_SIZE = 100 // should be lower than ARRAY_SIZE_FOR_SAMPLING
 
   private def visitArray(array: AnyRef, arrayClass: Class[_], state: SearchState) {
     val length = ScalaRunTime.array_length(array)
@@ -310,6 +312,8 @@ object SizeEstimator extends Logging {
     }
   }
 
+  protected def excludeClass(cls: Class[_]): Boolean = false
+
   /**
    * Get or compute the ClassInfo for a given class.
    */
@@ -318,6 +322,11 @@ object SizeEstimator extends Logging {
     val info = classInfos.get(cls)
     if (info != null) {
       return info
+    }
+
+    if (excludeClass(cls)) {
+      classInfos.put(cls, emptyClassInfo)
+      return emptyClassInfo
     }
 
     val parent = getClassInfo(cls.getSuperclass)
@@ -386,3 +395,11 @@ object SizeEstimator extends Logging {
   private def alignSizeUp(size: Long, alignSize: Int): Long =
     (size + alignSize - 1) & ~(alignSize - 1)
 }
+
+object SizeEstimator extends SizeEstimator {
+  // For testing only
+  private def initialize(): Unit = {
+    super.initialize()
+  }
+}
+
