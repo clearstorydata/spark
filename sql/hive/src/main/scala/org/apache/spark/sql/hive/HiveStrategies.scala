@@ -128,27 +128,32 @@ class DetermineTableStats(session: SparkSession) extends Rule[LogicalPlan] {
       // so when `totalSize` is zero, use `rawDataSize` instead.
       val totalSize = table.properties.get(StatsSetupConst.TOTAL_SIZE).map(_.toLong)
       val rawDataSize = table.properties.get(StatsSetupConst.RAW_DATA_SIZE).map(_.toLong)
-      val sizeInBytes = if (totalSize.isDefined && totalSize.get > 0) {
-        totalSize.get
+      val sizeInBytesOpt = if (totalSize.isDefined && totalSize.get > 0) {
+        totalSize
       } else if (rawDataSize.isDefined && rawDataSize.get > 0) {
-        rawDataSize.get
+        rawDataSize
       } else if (session.sessionState.conf.fallBackToHdfsForStatsEnabled) {
         try {
           val hadoopConf = session.sessionState.newHadoopConf()
           val tablePath = new Path(table.location)
           val fs: FileSystem = tablePath.getFileSystem(hadoopConf)
-          fs.getContentSummary(tablePath).getLength
+          Option(fs.getContentSummary(tablePath).getLength)
         } catch {
           case e: IOException =>
             logWarning("Failed to get table size from hdfs.", e)
-            session.sessionState.conf.defaultSizeInBytes
+            // SPY-1648
+            None
         }
       } else {
-        session.sessionState.conf.defaultSizeInBytes
+        // SPY-1648
+        None
       }
-
-      val withStats = table.copy(stats = Some(CatalogStatistics(sizeInBytes = BigInt(sizeInBytes))))
-      relation.copy(tableMeta = withStats)
+      // SPY-1648: don't set the stats if it can not be determined.
+      sizeInBytesOpt.map { sizeInBytes =>
+        relation.copy(tableMeta = table.copy(
+          stats = Some(CatalogStatistics(sizeInBytes = BigInt(sizeInBytes)))
+        ))
+      }.getOrElse(relation)
   }
 }
 
