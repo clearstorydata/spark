@@ -17,6 +17,7 @@
 
 package org.apache.spark.sql.execution
 
+import org.apache.spark.rdd.RDD
 import org.scalatest.BeforeAndAfterAll
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.test.TestSQLContext
@@ -235,6 +236,7 @@ class ExchangeCoordinatorSuite extends SparkFunSuite with BeforeAndAfterAll {
         Array(bytesByPartitionId1, bytesByPartitionId2),
         expectedPartitionStartIndices)
     }
+
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -279,6 +281,44 @@ class ExchangeCoordinatorSuite extends SparkFunSuite with BeforeAndAfterAll {
     val sqlContext = new TestSQLContext(sparkContext)
     try f(sqlContext) finally sparkContext.stop()
   }
+
+  /**
+   * SPARK-19462
+   */
+  test("exchange resilience") {
+    val test: SQLContext => Unit = { sqlContext: SQLContext =>
+      val df1 =
+        sqlContext
+          .range(0, 1000, 1, numInputPartitions)
+          .selectExpr("id as number")
+      df1.registerTempTable("test")
+
+      val data2 = sqlContext.sql("SELECT number, count(*) cnt FROM test GROUP BY number")
+      case class RddTree(rdd: RDD[_]) {
+        val children: Seq[RddTree] = rdd.dependencies.map(x => RddTree(x.rdd))
+        val rdds: Seq[RDD[_]] = rdd +: children.flatMap(x => x.rdds)
+      }
+      // execute the top rdd
+      data2.collect
+      // traverse the rdd dependencies and execute from top to bottom
+      // so that all the depending RDDs are re-executed and UnknownPartitioning should
+      // not be thrown
+      RddTree(data2.rdd).rdds.foreach(_.collect)
+
+    }
+
+    val sparkConf =
+      new SparkConf(false)
+        .setMaster("local[*]")
+        .setAppName("test")
+        .set("spark.ui.enabled", "false")
+        .set("spark.driver.allowMultipleContexts", "true")
+        .set(SQLConf.ADAPTIVE_EXECUTION_ENABLED.key, "true")
+    val sparkContext = new SparkContext(sparkConf)
+    val sqlContext = new TestSQLContext(sparkContext)
+    try test(sqlContext) finally sparkContext.stop()
+  }
+
 
   Seq(Some(5), None).foreach { minNumPostShufflePartitions =>
     val testNameNote = minNumPostShufflePartitions match {
