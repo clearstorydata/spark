@@ -244,7 +244,7 @@ private[hive] class HiveMetastoreCatalog(sparkSession: SparkSession) extends Log
       selectedDir <- selector.selectFiles(tableName, fs, location)
       if selectedDir.nonEmpty
     } yield selectedDir
-    logInfo(
+    logDebug(
       s"process duration of HiveMetastoreCatalog.selectParquetLocationDirectories(" +
         s"$tableName, $locationOpt): ${System.currentTimeMillis - start}, selected directories: " +
         s"${paths.map(_.size).getOrElse(0)}")
