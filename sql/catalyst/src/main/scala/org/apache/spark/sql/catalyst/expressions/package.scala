@@ -213,7 +213,7 @@ package object expressions  {
 
         case ambiguousReferences =>
           // More than one match.
-          val referenceNames = ambiguousReferences.map(_.qualifiedName).mkString(", ")
+          val referenceNames = ambiguousReferences.mkString(", ")
           throw new AnalysisException(s"Reference '$name' is ambiguous, could be: $referenceNames.")
       }
     }
