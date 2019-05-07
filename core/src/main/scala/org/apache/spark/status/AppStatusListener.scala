@@ -967,8 +967,6 @@ private[spark] class AppStatusListener(
     }
 
     logDebug(s"Cleanup stages ${stages.size} for total count of $count")
-    def stageKey(stageId: Int, attemptId: Int): Long =
-      stageId.toLong << 32 | (attemptId.toLong & 0x00000000ffffffffL)
 
     val stageKeys = stages.map { s =>
       val key = Array(s.info.stageId, s.info.attemptId)
@@ -996,24 +994,22 @@ private[spark] class AppStatusListener(
       }
 
       cleanupCachedQuantiles(key)
-      stageKey(s.info.stageId, s.info.attemptId)
-    }.toSet
+      key
+    }
 
     // Delete summaries in one pass, as deleting them for each stage is slow
-    val totalSummariesDeleted = kvstore.countingRemoveIf(
+    val totalSummariesDeleted = kvstore.removeAllByKeys(
       classOf[ExecutorStageSummaryWrapper],
-      { e: ExecutorStageSummaryWrapper =>
-        stageKeys.contains(stageKey(e.stageId, e.stageAttemptId))
-      })
+      "stage",
+      stageKeys)
 
     logDebug(s"Removed $totalSummariesDeleted summaries")
 
     // Delete tasks for all stages in one pass, as deleting them for each stage individually is slow
-    kvstore.countingRemoveIf(
+    kvstore.removeAllByKeys(
       classOf[TaskDataWrapper],
-      { t: TaskDataWrapper =>
-        stageKeys.contains(stageKey(t.stageId, t.stageAttemptId))
-      })
+      TaskIndexNames.STAGE,
+      stageKeys)
   }
 
   private def cleanupTasks(stage: LiveStage): Unit = {

@@ -23,7 +23,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -187,11 +186,11 @@ public class LevelDB implements KVStore {
 
   @Override
   public <T> KVStoreView<T> view(Class<T> type) throws Exception {
-    return new KVStoreView<T>(type) {
+    return new KVStoreView<T>() {
       @Override
       public Iterator<T> iterator() {
         try {
-          return new LevelDBIterator<>(LevelDB.this, this);
+          return new LevelDBIterator<>(type, LevelDB.this, this);
         } catch (Exception e) {
           throw Throwables.propagate(e);
         }
@@ -200,22 +199,23 @@ public class LevelDB implements KVStore {
   }
 
   @Override
-  public <T> int countingRemoveIf(Class<T> type, Predicate<? super T> filter) throws Exception {
-    LevelDBTypeInfo.Index naturalIndex = getTypeInfo(type).naturalIndex();
+  public <T> boolean removeAllByKeys(
+      Class<T> klass,
+      String index,
+      Collection keys) throws Exception {
+    LevelDBTypeInfo.Index naturalIndex = getTypeInfo(klass).naturalIndex();
+    boolean removed = false;
+    KVStoreView<T> view = view(klass).index(index);
 
-    List<T> list = new ArrayList<>();
-    view(type).forEach((item) ->  {
-      if (filter.test(item)) {
-        list.add(item);
+    for (Object key : keys) {
+      for (T value: view.first(key).last(key)) {
+        Object itemKey = naturalIndex.getValue(value);
+        delete(klass, itemKey);
+        removed = true;
       }
-    });
-
-    for (T item: list) {
-      Object key = naturalIndex.getValue(item);
-      delete(type, key);
     }
 
-    return list.size();
+    return removed;
   }
 
   @Override
